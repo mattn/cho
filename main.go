@@ -39,7 +39,7 @@ func main() {
 	for {
 		for i, line := range lines {
 			if i == row {
-				w.Write([]byte("\x1b[32m" + line + "\x1b[0m\x1b[0K\r\n"))
+				w.Write([]byte("\x1b[47m" + line + "\x1b[0m\x1b[0K\r\n"))
 			} else {
 				w.Write([]byte(line + "\x1b[0K\r\n"))
 			}
