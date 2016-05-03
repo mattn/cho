@@ -21,21 +21,24 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer tty.Close()
 
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
 	w := colorable.NewColorableStdout()
-	row := 0
 	result := ""
 
 	w.Write([]byte("\x1b[?25h"))
+
 	defer func() {
+		defer tty.Close()
 		w.Write([]byte("\x1b[?25l\x1b[0J"))
 		if result != "" {
 			w.Write([]byte(result + "\n"))
+		} else {
+			os.Exit(1)
 		}
 	}()
 
+	row := 0
 	for {
 		for i, line := range lines {
 			if i == row {
