@@ -74,6 +74,9 @@ func main() {
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	for i := 0; i < len(lines); i++ {
+		lines[i] = strings.Trim(lines[i], "\r")
+	}
 	out := colorable.NewColorableStdout()
 	result := ""
 
