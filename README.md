@@ -2,6 +2,8 @@
 
 choice!
 
+![cho](https://raw.githubusercontent.com/mattn/cho/master/cho.gif)
+
 ## Why cho?
 
 Why not choice? Because Windows already have `choice` command.
