@@ -90,7 +90,7 @@ func main() {
 			panic(e)
 		}
 		if result != "" {
-			out.Write([]byte(result + "\n"))
+			fmt.Println(result)
 		} else {
 			os.Exit(1)
 		}
