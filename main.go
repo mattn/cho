@@ -32,8 +32,12 @@ func main() {
 	out.Write([]byte("\x1b[?25l"))
 
 	defer func() {
+		e := recover()
 		tty.Close()
 		out.Write([]byte("\x1b[?25h\x1b[0J"))
+		if e != nil {
+			panic(e)
+		}
 		if result != "" {
 			out.Write([]byte(result + "\n"))
 		} else {
