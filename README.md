@@ -6,13 +6,13 @@ choice!
 
 ## Why cho?
 
-Why not choice? Because Windows already have `choice` command.
+Why not `choice`? Because Windows already have `choice` command.
 
-Why not choic? Too long
+Why not `choic`? Too long
 
-Why not choi? Still long
+Why not `choi`? Still long
 
-Why not cho? Sound good to me
+The, `cho`? Sound good to me
 
 ## Usage
 
