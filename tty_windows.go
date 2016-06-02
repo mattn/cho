@@ -18,6 +18,7 @@ const (
 	enableMouseInput     = 0x10
 	enableInsertMode     = 0x20
 	enableQuickEditMode  = 0x40
+	enableExtendedFlag   = 0x80
 
 	keyEvent              = 0x1
 	mouseEvent            = 0x2
@@ -172,6 +173,8 @@ func newTTY() (*TTY, error) {
 	st &^= enableLineInput
 	st &^= enableMouseInput
 	st &^= enableWindowInput
+	st &^= enableExtendedFlag
+	st &^= enableQuickEditMode
 	st |= enableProcessedInput
 
 	// ignore error
