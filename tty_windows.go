@@ -28,6 +28,7 @@ const (
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 var (
+	procAllocConsole                = kernel32.NewProc("AllocConsole")
 	procSetStdHandle                = kernel32.NewProc("SetStdHandle")
 	procGetStdHandle                = kernel32.NewProc("GetStdHandle")
 	procSetConsoleScreenBufferSize  = kernel32.NewProc("SetConsoleScreenBufferSize")
@@ -153,11 +154,13 @@ func newTTY() (*TTY, error) {
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		tty.out = os.Stdout
 	} else {
-		conout, err := os.Open("CONOUT$")
+		procAllocConsole.Call()
+		out, err := syscall.Open("CONOUT$", syscall.O_RDWR, 0)
 		if err != nil {
 			return nil, err
 		}
-		tty.out = conout
+
+		tty.out = os.NewFile(uintptr(out), "/dev/tty")
 	}
 
 	h := tty.in.Fd()

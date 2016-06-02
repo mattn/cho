@@ -77,7 +77,8 @@ func main() {
 	for i := 0; i < len(lines); i++ {
 		lines[i] = strings.Trim(lines[i], "\r")
 	}
-	out := colorable.NewColorableStdout()
+
+	out := colorable.NewColorable(tty.out)
 	result := ""
 
 	out.Write([]byte("\x1b[?25l"))
@@ -106,7 +107,8 @@ func main() {
 	for {
 		w, h, err := tty.Size()
 		if err != nil {
-			return
+			w = 80
+			h = 25
 		}
 		n := 0
 		for i, line := range lines[off:] {
