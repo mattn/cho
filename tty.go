@@ -32,7 +32,12 @@ func newTTY() (*TTY, error) {
 		return nil, err
 	}
 	tty.in = in
-	tty.out = os.Stdout
+
+	out, err := os.OpenFile("/dev/tty", syscall.O_WRONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	tty.out = out
 
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(tty.in.Fd()), ioctlReadTermios, uintptr(unsafe.Pointer(&tty.termios)), 0, 0, 0); err != 0 {
 		return nil, err
