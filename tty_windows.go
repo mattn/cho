@@ -189,6 +189,7 @@ func newTTY() (*TTY, error) {
 	return tty, nil
 }
 
-func (tty *TTY) Close() {
+func (tty *TTY) Close() error {
 	procSetConsoleMode.Call(tty.in, uintptr(tty.st))
+	return nil
 }
