@@ -11,13 +11,13 @@ import (
 )
 
 const (
-	enableEchoInput      = 0x4
-	enableInsertMode     = 0x20
-	enableLineInput      = 0x2
-	enableMouseInput     = 0x10
 	enableProcessedInput = 0x1
-	enableQuickEditMode  = 0x40
+	enableLineInput      = 0x2
+	enableEchoInput      = 0x4
 	enableWindowInput    = 0x8
+	enableMouseInput     = 0x10
+	enableInsertMode     = 0x20
+	enableQuickEditMode  = 0x40
 
 	keyEvent              = 0x1
 	mouseEvent            = 0x2
@@ -107,11 +107,9 @@ type charInfo struct {
 }
 
 type TTY struct {
-	in  uintptr
-	out uintptr
+	in  *os.File
+	out *os.File
 	st  uint32
-	w   int
-	h   int
 }
 
 func readConsoleInput(fd uintptr, record *inputRecord) (err error) {
@@ -125,7 +123,7 @@ func readConsoleInput(fd uintptr, record *inputRecord) (err error) {
 
 func (tty *TTY) readRune() (rune, error) {
 	var ir inputRecord
-	err := readConsoleInput(tty.in, &ir)
+	err := readConsoleInput(tty.in.Fd(), &ir)
 	if err != nil {
 		return 0, err
 	}
@@ -141,28 +139,29 @@ func (tty *TTY) readRune() (rune, error) {
 
 func newTTY() (*TTY, error) {
 	tty := new(TTY)
-	if isatty.IsTerminal(os.Stdin.Fd()) {
-		tty.in = os.Stdin.Fd()
+	if false && isatty.IsTerminal(os.Stdin.Fd()) {
+		tty.in = os.Stdin
 	} else {
 		conin, err := os.Open("CONIN$")
 		if err != nil {
 			return nil, err
 		}
-		tty.in = conin.Fd()
+		tty.in = conin
 	}
 
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		tty.out = os.Stdout.Fd()
+		tty.out = os.Stdout
 	} else {
 		conout, err := os.Open("CONOUT$")
 		if err != nil {
 			return nil, err
 		}
-		tty.out = conout.Fd()
+		tty.out = conout
 	}
 
+	h := tty.in.Fd()
 	var st uint32
-	r1, _, err := procGetConsoleMode.Call(tty.in, uintptr(unsafe.Pointer(&st)))
+	r1, _, err := procGetConsoleMode.Call(h, uintptr(unsafe.Pointer(&st)))
 	if r1 == 0 {
 		return nil, err
 	}
@@ -172,24 +171,25 @@ func newTTY() (*TTY, error) {
 	st &^= enableInsertMode
 	st &^= enableLineInput
 	st &^= enableMouseInput
-	st |= enableWindowInput
+	st &^= enableWindowInput
+	st |= enableProcessedInput
 
 	// ignore error
-	procSetConsoleMode.Call(tty.in, uintptr(st))
-
-	var csbi consoleScreenBufferInfo
-
-	r1, _, err = procGetConsoleScreenBufferInfo.Call(tty.out, uintptr(unsafe.Pointer(&csbi)))
-	if r1 == 0 {
-		return nil, err
-	}
-	tty.w = int(csbi.size.x)
-	tty.h = int(csbi.size.y)
+	procSetConsoleMode.Call(h, uintptr(st))
 
 	return tty, nil
 }
 
 func (tty *TTY) Close() error {
-	procSetConsoleMode.Call(tty.in, uintptr(tty.st))
+	procSetConsoleMode.Call(tty.in.Fd(), uintptr(tty.st))
 	return nil
+}
+
+func (tty *TTY) Size() (int, int, error) {
+	var csbi consoleScreenBufferInfo
+	r1, _, err := procGetConsoleScreenBufferInfo.Call(tty.out.Fd(), uintptr(unsafe.Pointer(&csbi)))
+	if r1 == 0 {
+		return 0, 0, err
+	}
+	return int(csbi.window.right - csbi.window.left), int(csbi.window.bottom - csbi.window.top), nil
 }

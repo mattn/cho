@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-runewidth"
 )
 
 func main() {
@@ -23,43 +26,86 @@ func main() {
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
-	w := colorable.NewColorableStdout()
+	out := colorable.NewColorableStdout()
 	result := ""
 
-	w.Write([]byte("\x1b[?25l"))
+	out.Write([]byte("\x1b[?25l"))
 
 	defer func() {
 		tty.Close()
-		w.Write([]byte("\x1b[?25h\x1b[0J"))
+		out.Write([]byte("\x1b[?25h\x1b[0J"))
 		if result != "" {
-			w.Write([]byte(result + "\n"))
+			out.Write([]byte(result + "\n"))
 		} else {
 			os.Exit(1)
 		}
 	}()
 
+	buf := bufio.NewWriterSize(out, 8000)
+	off := 0
 	row := 0
+	dirty := make([]bool, len(lines))
+	for i := 0; i < len(dirty); i++ {
+		dirty[i] = true
+	}
 	for {
-		pos := 0
-		for i, line := range lines {
-			if i == row {
-				w.Write([]byte("\x1b[30;47m" + line + "\x1b[0m\x1b[0K\r\n"))
-			} else {
-				w.Write([]byte(line + "\x1b[0K\r\n"))
-			}
-			pos++
+		w, h, err := tty.Size()
+		if err != nil {
+			return
 		}
-		w.Write([]byte(fmt.Sprintf("\x1b[%dA", pos)))
+		n := 0
+		for i, line := range lines[off:] {
+			line = strings.Replace(line, "\t", "    ", -1)
+			line = runewidth.Truncate(line, w, "")
+			if dirty[off+i] {
+				buf.Write([]byte("\x1b[0K"))
+				if off+i == row {
+					buf.Write([]byte("\x1b[30;47m" + line + "\x1b[0m\r"))
+				} else {
+					buf.Write([]byte(line + "\r"))
+				}
+				dirty[off+i] = false
+			}
+			n++
+			if n >= h {
+				if runtime.GOOS == "windows" {
+					buf.Write([]byte("\n"))
+				}
+				break
+			}
+			buf.Write([]byte("\n"))
+		}
+		buf.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
+		buf.Flush()
 
-		r, _ := tty.readRune()
+		var r rune
+		for r == 0 {
+			r, err = tty.readRune()
+		}
 		switch r {
 		case 'j':
 			if row < len(lines)-1 {
+				dirty[row] = true
 				row++
+				dirty[row] = true
+				if row-off >= h {
+					off++
+					for i := 0; i < len(dirty); i++ {
+						dirty[i] = true
+					}
+				}
 			}
 		case 'k':
 			if row > 0 {
+				dirty[row] = true
 				row--
+				dirty[row] = true
+				if row < off {
+					off--
+					for i := 0; i < len(dirty); i++ {
+						dirty[i] = true
+					}
+				}
 			}
 		case 13:
 			result = lines[row]

@@ -31,7 +31,6 @@ func (tty *TTY) readRune() (rune, error) {
 
 func newTTY() (*TTY, error) {
 	tty := new(TTY)
-	//tty.in = os.Stdin
 
 	in, err := os.Open("/dev/tty")
 	if err != nil {
@@ -55,4 +54,12 @@ func newTTY() (*TTY, error) {
 func (tty *TTY) Close() error {
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(tty.in.Fd()), ioctlWriteTermios, uintptr(unsafe.Pointer(&tty.termios)), 0, 0, 0)
 	return err
+}
+
+func (tty *TTY) Size() (int, int, error) {
+	var dim [4]uint16
+	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(tty.out.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dim)), 0, 0, 0); err != 0 {
+		return -1, -1, err
+	}
+	return int(dim[1]), int(dim[0]), nil
 }
