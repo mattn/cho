@@ -15,8 +15,8 @@ import (
 
 var (
 	cursorline = flag.Bool("cl", false, "cursor line")
-	linefg     = flag.String("fg", "black", "line foreground")
-	linebg     = flag.String("bg", "white", "line background")
+	linefg     = flag.String("lf", "black", "line foreground")
+	linebg     = flag.String("lb", "white", "line background")
 
 	fgcolor = map[string]string{
 		"gray":    "30",
