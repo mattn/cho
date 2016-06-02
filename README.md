@@ -24,6 +24,19 @@ Just like [peco](https://github.com/peco/peco)
 $ go get github.com/mattn/cho
 ```
 
+## Usecase
+
+### Linux
+```
+FOO=`ls | cho`
+```
+
+### Windows
+
+```
+for /f "delims=;" %%i in ('ls ^| cho') do set FOO=%%i
+```
+
 ## License
 
 MIT
