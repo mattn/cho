@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,7 +13,54 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+var (
+	cursorline = flag.Bool("cl", false, "cursor line")
+	linefg     = flag.String("fg", "black", "line foreground")
+	linebg     = flag.String("bg", "white", "line background")
+
+	fgcolor = map[string]string{
+		"gray":    "30",
+		"black":   "30",
+		"red":     "31",
+		"green":   "32",
+		"yellow":  "33",
+		"blue":    "34",
+		"magenta": "35",
+		"cyan":    "36",
+		"white":   "37",
+	}
+	bgcolor = map[string]string{
+		"black":   "40",
+		"gray":    "40",
+		"red":     "41",
+		"green":   "42",
+		"yellow":  "43",
+		"blue":    "44",
+		"magenta": "45",
+		"cyan":    "46",
+		"white":   "47",
+	}
+)
+
 func main() {
+	flag.Parse()
+
+	fillstart := "\x1b[0K"
+	fillend := "\x1b[0m"
+	clearend := "\x1b[0K"
+	if *cursorline {
+		fillstart = ""
+		fillend = "\x1b[0K\x1b[0m"
+	}
+	fg, ok := fgcolor[*linefg]
+	if !ok {
+		fg = fgcolor["black"]
+	}
+	bg, ok := bgcolor[*linebg]
+	if !ok {
+		bg = bgcolor["white"]
+	}
+
 	b, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -62,11 +110,11 @@ func main() {
 			line = strings.Replace(line, "\t", "    ", -1)
 			line = runewidth.Truncate(line, w, "")
 			if dirty[off+i] {
-				buf.Write([]byte("\x1b[0K"))
+				buf.Write([]byte(fillstart))
 				if off+i == row {
-					buf.Write([]byte("\x1b[30;47m" + line + "\x1b[0m\r"))
+					buf.Write([]byte("\x1b[" + fg + ";" + bg + "m" + line + fillend + "\r"))
 				} else {
-					buf.Write([]byte(line + "\r"))
+					buf.Write([]byte(line + clearend + "\r"))
 				}
 				dirty[off+i] = false
 			}
@@ -82,16 +130,15 @@ func main() {
 		buf.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
 		buf.Flush()
 
-		var r rune
-		for r == 0 {
-			r, err = tty.readRune()
+		r, err := tty.readRune()
+		if err != nil {
+			panic(err)
 		}
 		switch r {
-		case 'j':
+		case 'j', 0x0E:
 			if row < len(lines)-1 {
-				dirty[row] = true
+				dirty[row], dirty[row+1] = true, true
 				row++
-				dirty[row] = true
 				if row-off >= h {
 					off++
 					for i := 0; i < len(dirty); i++ {
@@ -99,11 +146,10 @@ func main() {
 					}
 				}
 			}
-		case 'k':
+		case 'k', 0x10:
 			if row > 0 {
-				dirty[row] = true
+				dirty[row], dirty[row-1] = true, true
 				row--
-				dirty[row] = true
 				if row < off {
 					off--
 					for i := 0; i < len(dirty); i++ {
