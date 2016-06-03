@@ -66,6 +66,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	if len(b) == 0 {
+		fmt.Fprintln(os.Stderr, "no buffer to work with was available")
+		os.Exit(1)
+	}
 
 	tty, err := newTTY()
 	if err != nil {
