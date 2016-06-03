@@ -12,7 +12,7 @@ Why not `choic`? Too long
 
 Why not `choi`? Still long
 
-The, `cho`? Sound good to me
+Then, `cho`? Sound good to me
 
 ## Usage
 
