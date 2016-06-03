@@ -71,20 +71,18 @@ func main() {
 		fmt.Fprintln(os.Stderr, "no buffer to work with was available")
 		os.Exit(1)
 	}
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	for i := 0; i < len(lines); i++ {
+		lines[i] = strings.Trim(lines[i], "\r")
+	}
+	result := ""
 
 	tty, err := tty.New()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
-	for i := 0; i < len(lines); i++ {
-		lines[i] = strings.Trim(lines[i], "\r")
-	}
-
 	out := colorable.NewColorable(tty.Output())
-	result := ""
 
 	out.Write([]byte("\x1b[?25l"))
 
