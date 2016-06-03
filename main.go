@@ -71,10 +71,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "no buffer to work with was available")
 		os.Exit(1)
 	}
-	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
-	for i := 0; i < len(lines); i++ {
-		lines[i] = strings.Trim(lines[i], "\r")
-	}
+	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
 	result := ""
 
 	tty, err := tty.New()
@@ -88,8 +85,8 @@ func main() {
 
 	defer func() {
 		e := recover()
-		tty.Close()
 		out.Write([]byte("\x1b[?25h\x1b[0J"))
+		tty.Close()
 		if e != nil {
 			panic(e)
 		}
@@ -100,7 +97,7 @@ func main() {
 		}
 	}()
 
-	buf := bufio.NewWriterSize(out, 8000)
+	buf := bufio.NewWriter(out)
 	off := 0
 	row := 0
 	dirty := make([]bool, len(lines))
