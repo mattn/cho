@@ -14,12 +14,21 @@ import (
 	"github.com/mattn/go-tty"
 )
 
+type AnsiColor map[string]string
+
+func (a AnsiColor) Get(name, fallback string) string {
+	if c, ok := a[name]; ok {
+		return c
+	}
+	return a[fallback]
+}
+
 var (
 	cursorline = flag.Bool("cl", false, "cursor line")
 	linefg     = flag.String("lf", "black", "line foreground")
 	linebg     = flag.String("lb", "white", "line background")
 
-	fgcolor = map[string]string{
+	fgcolor = AnsiColor{
 		"gray":    "30",
 		"black":   "30",
 		"red":     "31",
@@ -30,7 +39,7 @@ var (
 		"cyan":    "36",
 		"white":   "37",
 	}
-	bgcolor = map[string]string{
+	bgcolor = AnsiColor{
 		"black":   "40",
 		"gray":    "40",
 		"red":     "41",
@@ -53,14 +62,8 @@ func main() {
 		fillstart = ""
 		fillend = "\x1b[0K\x1b[0m"
 	}
-	fg, ok := fgcolor[*linefg]
-	if !ok {
-		fg = fgcolor["black"]
-	}
-	bg, ok := bgcolor[*linebg]
-	if !ok {
-		bg = bgcolor["white"]
-	}
+	fg := fgcolor.Get(*linefg, "black")
+	bg := bgcolor.Get(*linebg, "white")
 
 	b, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
