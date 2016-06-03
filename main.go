@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
+	"github.com/mattn/go-tty"
 )
 
 var (
@@ -71,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tty, err := newTTY()
+	tty, err := tty.New()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -82,7 +83,7 @@ func main() {
 		lines[i] = strings.Trim(lines[i], "\r")
 	}
 
-	out := colorable.NewColorable(tty.out)
+	out := colorable.NewColorable(tty.Output())
 	result := ""
 
 	out.Write([]byte("\x1b[?25l"))
@@ -139,7 +140,7 @@ func main() {
 		buf.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
 		buf.Flush()
 
-		r, err := tty.readRune()
+		r, err := tty.ReadRune()
 		if err != nil {
 			panic(err)
 		}
