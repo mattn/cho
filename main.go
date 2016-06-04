@@ -77,7 +77,7 @@ func main() {
 	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
 	result := ""
 
-	tty, err := tty.New()
+	tty, err := tty.Open()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -143,7 +143,7 @@ func main() {
 			panic(err)
 		}
 		switch r {
-		case 'j', 0x0E:
+		case '\t', 'j', 0x0E:
 			if row < len(lines)-1 {
 				dirty[row], dirty[row+1] = true, true
 				row++
