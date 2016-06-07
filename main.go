@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/mattn/go-colorable"
@@ -27,6 +27,8 @@ var (
 	cursorline = flag.Bool("cl", false, "cursor line")
 	linefg     = flag.String("lf", "black", "line foreground")
 	linebg     = flag.String("lb", "white", "line background")
+	color      = flag.Bool("cc", false, "handle colors")
+	truncate   = runewidth.Truncate
 
 	fgcolor = AnsiColor{
 		"gray":    "30",
@@ -52,6 +54,49 @@ var (
 	}
 )
 
+func truncateAnsi(line string, w int, _ string) string {
+	r := []rune(line)
+	out := []rune{}
+	width := 0
+	i := 0
+	for ; i < len(r); i++ {
+		if i < len(r)-1 && r[i] == '\x1b' && r[i+1] == '[' {
+			j := i + 2
+			for ; j < len(r); j++ {
+				if ('a' <= r[j] && r[j] <= 'z') || ('A' <= r[j] && r[j] <= 'Z') {
+					if r[j] == 'm' {
+						s := ""
+						for _, tok := range strings.Split(string(r[i+2:j]), ";") {
+							n, _ := strconv.Atoi(tok)
+							if n == 0 || n == 39 || (30 <= n && n <= 37) {
+								if s != "" {
+									s += ";"
+								}
+								if n == 0 {
+									tok = "39"
+								}
+								s += tok
+							}
+						}
+						s = "\x1b[" + s + "m"
+						out = append(out, []rune(s)...)
+					}
+					break
+				}
+			}
+			i = j
+			continue
+		}
+		cw := runewidth.RuneWidth(r[i])
+		if width+cw > w {
+			break
+		}
+		width += cw
+		out = append(out, r[i])
+	}
+	return string(out)
+}
+
 func main() {
 	flag.Parse()
 
@@ -64,6 +109,10 @@ func main() {
 	}
 	fg := fgcolor.Get(*linefg, "black")
 	bg := bgcolor.Get(*linebg, "white")
+
+	if *color {
+		truncate = truncateAnsi
+	}
 
 	b, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
@@ -100,7 +149,6 @@ func main() {
 		}
 	}()
 
-	buf := bufio.NewWriter(out)
 	off := 0
 	row := 0
 	dirty := make([]bool, len(lines))
@@ -114,29 +162,29 @@ func main() {
 			h = 25
 		}
 		n := 0
+
 		for i, line := range lines[off:] {
 			line = strings.Replace(line, "\t", "    ", -1)
-			line = runewidth.Truncate(line, w, "")
+			line = truncate(line, w, "")
 			if dirty[off+i] {
-				buf.Write([]byte(fillstart))
+				out.Write([]byte(fillstart))
 				if off+i == row {
-					buf.Write([]byte("\x1b[" + fg + ";" + bg + "m" + line + fillend + "\r"))
+					out.Write([]byte("\x1b[" + fg + ";" + bg + "m" + line + fillend + "\r"))
 				} else {
-					buf.Write([]byte(line + clearend + "\r"))
+					out.Write([]byte(line + clearend + "\r"))
 				}
 				dirty[off+i] = false
 			}
 			n++
 			if n >= h {
 				if runtime.GOOS == "windows" {
-					buf.Write([]byte("\n"))
+					out.Write([]byte("\n"))
 				}
 				break
 			}
-			buf.Write([]byte("\n"))
+			out.Write([]byte("\n"))
 		}
-		buf.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
-		buf.Flush()
+		out.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
 
 		r, err := tty.ReadRune()
 		if err != nil {
