@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
@@ -132,6 +133,15 @@ func main() {
 		os.Exit(1)
 	}
 	out := colorable.NewColorable(tty.Output())
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	go func() {
+		<-sc
+		out.Write([]byte("\x1b[?25h\x1b[0J"))
+		tty.Close()
+		os.Exit(1)
+	}()
 
 	out.Write([]byte("\x1b[?25l"))
 
