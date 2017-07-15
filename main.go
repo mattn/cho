@@ -229,7 +229,7 @@ func main() {
 			result = lines[row]
 			return
 		case 27:
-			if !tty.Inbuf() {
+			if !tty.Buffered() {
 				return
 			}
 			r, err = tty.ReadRune()
