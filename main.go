@@ -200,6 +200,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+
+	retry:
 		switch r {
 		case '\t', 'j', 0x0E:
 			if row < len(lines)-1 {
@@ -227,7 +229,24 @@ func main() {
 			result = lines[row]
 			return
 		case 27:
-			return
+			if !tty.Inbuf() {
+				return
+			}
+			r, err = tty.ReadRune()
+			if err == nil && r == 0x5b {
+				r, err = tty.ReadRune()
+				if err != nil {
+					panic(err)
+				}
+				switch r {
+				case 'A':
+					r = 'k'
+					goto retry
+				case 'B':
+					r = 'j'
+					goto retry
+				}
+			}
 		}
 	}
 }
