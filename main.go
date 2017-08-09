@@ -192,9 +192,6 @@ func main() {
 					dirty[off+i] = true
 				}
 				out.Write([]byte("\x1b[0J"))
-				if row >= len(qlines) {
-					row = 0
-				}
 			} else {
 				qlines = lines[off:]
 			}
@@ -282,6 +279,8 @@ func main() {
 		case 8:
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
+				row = 0
+				off = 0
 			}
 		default:
 			if !*query {
@@ -296,6 +295,8 @@ func main() {
 			}
 			if *query && unicode.IsPrint(r) {
 				rs = append(rs, r)
+				row = 0
+				off = 0
 			}
 		}
 	}
