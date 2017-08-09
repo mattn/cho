@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
@@ -29,6 +30,7 @@ var (
 	linefg     = flag.String("lf", "black", "line foreground")
 	linebg     = flag.String("lb", "white", "line background")
 	color      = flag.Bool("cc", false, "handle colors")
+	query      = flag.Bool("q", false, "use query")
 	truncate   = runewidth.Truncate
 
 	fgcolor = AnsiColor{
@@ -126,6 +128,7 @@ func main() {
 	}
 	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
 	result := ""
+	var qlines []string
 
 	tty, err := tty.Open()
 	if err != nil {
@@ -143,11 +146,13 @@ func main() {
 		os.Exit(1)
 	}()
 
-	out.Write([]byte("\x1b[?25l"))
+	if !*query {
+		out.Write([]byte("\x1b[?25l"))
+	}
 
 	defer func() {
 		e := recover()
-		out.Write([]byte("\x1b[?25h\x1b[0J"))
+		out.Write([]byte("\x1b[?25h\r\x1b[0J"))
 		tty.Close()
 		if e != nil {
 			panic(e)
@@ -159,6 +164,7 @@ func main() {
 		}
 	}()
 
+	var rs []rune
 	off := 0
 	row := 0
 	dirty := make([]bool, len(lines))
@@ -173,7 +179,29 @@ func main() {
 		}
 		n := 0
 
-		for i, line := range lines[off:] {
+		if *query {
+			out.Write([]byte(fillstart))
+			out.Write([]byte("\r" + fillstart + "> " + string(rs) + "\n"))
+			n++
+			qlines = nil
+			if len(rs) > 0 {
+				for i, line := range lines {
+					if strings.Index(line, string(rs)) != -1 {
+						qlines = append(qlines, line)
+					}
+					dirty[off+i] = true
+				}
+				out.Write([]byte("\x1b[0J"))
+				if row >= len(qlines) {
+					row = 0
+				}
+			} else {
+				qlines = lines[off:]
+			}
+		} else {
+			qlines = lines[off:]
+		}
+		for i, line := range qlines {
 			line = strings.Replace(line, "\t", "    ", -1)
 			line = truncate(line, w, "")
 			if dirty[off+i] {
@@ -194,7 +222,11 @@ func main() {
 			}
 			out.Write([]byte("\n"))
 		}
-		out.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
+		if *query {
+			out.Write([]byte(fmt.Sprintf("\x1b[%dA\x1b[%dC", n, runewidth.StringWidth(string(rs))+2)))
+		} else {
+			out.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
+		}
 
 		r, err := tty.ReadRune()
 		if err != nil {
@@ -203,8 +235,8 @@ func main() {
 
 	retry:
 		switch r {
-		case '\t', 'j', 0x0E:
-			if row < len(lines)-1 {
+		case '\t', 0x0E:
+			if row < len(qlines)-1 {
 				dirty[row], dirty[row+1] = true, true
 				row++
 				if row-off >= h {
@@ -214,7 +246,7 @@ func main() {
 					}
 				}
 			}
-		case 'k', 0x10:
+		case 0x10:
 			if row > 0 {
 				dirty[row], dirty[row-1] = true, true
 				row--
@@ -226,7 +258,7 @@ func main() {
 				}
 			}
 		case 13:
-			result = lines[row]
+			result = qlines[row]
 			return
 		case 27:
 			if !tty.Buffered() {
@@ -246,6 +278,24 @@ func main() {
 					r = 'j'
 					goto retry
 				}
+			}
+		case 8:
+			if *query && len(rs) > 0 {
+				rs = rs[:len(rs)-1]
+			}
+		default:
+			if !*query {
+				switch r {
+				case 'j':
+					r = 0x0E
+					goto retry
+				case 'k':
+					r = 0x10
+					goto retry
+				}
+			}
+			if *query && unicode.IsPrint(r) {
+				rs = append(rs, r)
 			}
 		}
 	}
