@@ -181,7 +181,7 @@ func main() {
 
 		if *query {
 			out.Write([]byte(fillstart))
-			out.Write([]byte("\r" + fillstart + "> " + string(rs) + "\n"))
+			out.Write([]byte("\r" + clearend + "> " + string(rs) + "\n"))
 			n++
 			qlines = nil
 			if len(rs) > 0 {
