@@ -31,6 +31,7 @@ var (
 	linebg     = flag.String("lb", "white", "line background")
 	color      = flag.Bool("cc", false, "handle colors")
 	query      = flag.Bool("q", false, "use query")
+	sep        = flag.String("sep", "", "separator for prefix")
 	truncate   = runewidth.Truncate
 
 	fgcolor = AnsiColor{
@@ -128,7 +129,21 @@ func main() {
 	}
 	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
 	result := ""
-	var qlines []string
+	var qlines, rlines []string
+
+	if *sep != "" {
+		rlines = make([]string, len(lines))
+		for i, line := range lines {
+			tok := strings.SplitN(line, *sep, 2)
+			if len(tok) == 2 {
+				rlines[i] = tok[0]
+				lines[i] = tok[1]
+			} else {
+				rlines[i] = tok[0]
+				lines[i] = ""
+			}
+		}
+	}
 
 	tty, err := tty.Open()
 	if err != nil {
@@ -255,7 +270,11 @@ func main() {
 				}
 			}
 		case 13:
-			result = qlines[row]
+			if *sep != "" {
+				result = rlines[off+row]
+			} else {
+				result = qlines[row]
+			}
 			return
 		case 27:
 			if !tty.Buffered() {
