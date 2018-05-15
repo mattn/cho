@@ -132,6 +132,9 @@ func main() {
 	var qlines, rlines []string
 
 	if *sep != "" {
+		if *sep == "TAB" {
+			*sep = "\t"
+		}
 		rlines = make([]string, len(lines))
 		for i, line := range lines {
 			tok := strings.SplitN(line, *sep, 2)
@@ -300,6 +303,11 @@ func main() {
 				rs = rs[:len(rs)-1]
 				row = 0
 				off = 0
+				if len(rs) == 0 {
+					for i := 0; i < len(dirty); i++ {
+						dirty[i] = true
+					}
+				}
 			}
 		default:
 			if !*query {
