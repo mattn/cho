@@ -131,23 +131,6 @@ func main() {
 	result := ""
 	var qlines, rlines []string
 
-	if *sep != "" {
-		if *sep == "TAB" {
-			*sep = "\t"
-		}
-		rlines = make([]string, len(lines))
-		for i, line := range lines {
-			tok := strings.SplitN(line, *sep, 2)
-			if len(tok) == 2 {
-				rlines[i] = tok[0]
-				lines[i] = tok[1]
-			} else {
-				rlines[i] = tok[0]
-				lines[i] = ""
-			}
-		}
-	}
-
 	tty, err := tty.Open()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -164,6 +147,9 @@ func main() {
 		os.Exit(1)
 	}()
 
+	if *sep == "TAB" {
+		*sep = "\t"
+	}
 	if !*query {
 		out.Write([]byte("\x1b[?25l"))
 	}
@@ -202,19 +188,49 @@ func main() {
 			out.Write([]byte("\r" + clearend + "> " + string(rs) + "\n"))
 			n++
 			qlines = nil
+			rlines = nil
 			if len(rs) > 0 {
-				for i, line := range lines {
-					if strings.Index(line, string(rs)) != -1 {
-						qlines = append(qlines, line)
+				for i, qline := range lines {
+					rline := qline
+					if *sep != "" {
+						tok := strings.SplitN(qline, *sep, 2)
+						if len(tok) == 2 {
+							rline = tok[0]
+							qline = tok[1]
+						} else {
+							rline = tok[0]
+							qline = ""
+						}
+					}
+
+					if strings.Index(qline, string(rs)) != -1 {
+						rlines = append(rlines, rline)
+						qlines = append(qlines, qline)
 					}
 					dirty[off+i] = true
 				}
 				out.Write([]byte("\x1b[0J"))
 			} else {
-				qlines = lines[off:]
+				for _, qline := range lines {
+					rline := qline
+					if *sep != "" {
+						tok := strings.SplitN(qline, *sep, 2)
+						if len(tok) == 2 {
+							rline = tok[0]
+							qline = tok[1]
+						} else {
+							rline = tok[0]
+							qline = ""
+						}
+					}
+
+					rlines = append(rlines, rline)
+					qlines = append(qlines, qline)
+				}
 			}
 		} else {
 			qlines = lines[off:]
+			rlines = qlines
 		}
 		for i, line := range qlines {
 			line = strings.Replace(line, "\t", "    ", -1)
@@ -274,7 +290,7 @@ func main() {
 			}
 		case 13:
 			if *sep != "" {
-				result = rlines[off+row]
+				result = rlines[row]
 			} else {
 				result = qlines[row]
 			}
