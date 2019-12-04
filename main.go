@@ -288,14 +288,23 @@ func main() {
 					}
 				}
 			}
-		case 13:
+		case 0x17:
+			if *query && len(rs) > 0 {
+				rs = []rune{}
+				row = 0
+				off = 0
+				for i := 0; i < len(dirty); i++ {
+					dirty[i] = true
+				}
+			}
+		case 0x0D:
 			if *sep != "" {
 				result = rlines[row]
 			} else {
 				result = qlines[row]
 			}
 			return
-		case 27:
+		case 0x1B:
 			if !tty.Buffered() {
 				return
 			}
@@ -314,7 +323,7 @@ func main() {
 					goto retry
 				}
 			}
-		case 8:
+		case 0x08:
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
 				row = 0
