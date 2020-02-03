@@ -31,6 +31,7 @@ var (
 	linebg     = flag.String("lb", "white", "line background")
 	color      = flag.Bool("cc", false, "handle colors")
 	query      = flag.Bool("q", false, "use query")
+	multi      = flag.Bool("m", false, "multi select")
 	sep        = flag.String("sep", "", "separator for prefix")
 	truncate   = runewidth.Truncate
 
@@ -162,7 +163,7 @@ func main() {
 			panic(e)
 		}
 		if result != "" {
-			fmt.Println(result)
+			fmt.Print(result)
 		} else {
 			os.Exit(1)
 		}
@@ -172,6 +173,7 @@ func main() {
 	off := 0
 	row := 0
 	dirty := make([]bool, len(lines))
+	selected := make([]bool, len(lines))
 	for i := 0; i < len(dirty); i++ {
 		dirty[i] = true
 	}
@@ -180,6 +182,9 @@ func main() {
 		if err != nil {
 			w = 80
 			h = 25
+			if *multi {
+				w -= 1
+			}
 		}
 		n := 0
 
@@ -236,6 +241,13 @@ func main() {
 			line = strings.Replace(line, "\t", "    ", -1)
 			line = truncate(line, w, "")
 			if dirty[off+i] {
+				if *multi {
+					if selected[off+i] {
+						out.Write([]byte{'*'})
+					} else {
+						out.Write([]byte{' '})
+					}
+				}
 				out.Write([]byte(fillstart))
 				if off+i == row {
 					out.Write([]byte("\x1b[" + fg + ";" + bg + "m" + line + fillend + "\r"))
@@ -297,11 +309,26 @@ func main() {
 					dirty[i] = true
 				}
 			}
+		case 0x20:
+			selected[row] = true
+			dirty[row] = true
 		case 0x0D:
-			if *sep != "" {
-				result = rlines[row]
+			if *multi {
+				for i, s := range selected {
+					if s {
+						if *sep != "" {
+							result += rlines[i] + "\n"
+						} else {
+							result += qlines[i] + "\n"
+						}
+					}
+				}
 			} else {
-				result = qlines[row]
+				if *sep != "" {
+					result = rlines[row] + "\n"
+				} else {
+					result = qlines[row] + "\n"
+				}
 			}
 			return
 		case 0x1B:
