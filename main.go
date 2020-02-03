@@ -350,7 +350,7 @@ func main() {
 					goto retry
 				}
 			}
-		case 0x08:
+		case 0x08, 0x7F:
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
 				row = 0
