@@ -317,17 +317,17 @@ func main() {
 				for i, s := range selected {
 					if s {
 						if *sep != "" {
-							result += rlines[i] + "\n"
+							result += rlines[i-off] + "\n"
 						} else {
-							result += qlines[i] + "\n"
+							result += qlines[i-off] + "\n"
 						}
 					}
 				}
 			} else {
 				if *sep != "" {
-					result = rlines[row] + "\n"
+					result = rlines[row-off] + "\n"
 				} else {
-					result = qlines[row] + "\n"
+					result = qlines[row-off] + "\n"
 				}
 			}
 			return
