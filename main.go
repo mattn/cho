@@ -310,7 +310,7 @@ func main() {
 				}
 			}
 		case 0x20:
-			selected[row] = true
+			selected[row] = !selected[row]
 			dirty[row] = true
 		case 0x0D:
 			if *multi {
