@@ -182,9 +182,9 @@ func main() {
 		if err != nil {
 			w = 80
 			h = 25
-			if *multi {
-				w -= 1
-			}
+		}
+		if *multi {
+			w -= 1
 		}
 		n := 0
 
