@@ -278,7 +278,7 @@ func main() {
 
 	retry:
 		switch r {
-		case '\t', 0x0E:
+		case 0x09, 0x0E:
 			if row < len(qlines)-1 {
 				dirty[row], dirty[row+1] = true, true
 				row++
@@ -309,7 +309,7 @@ func main() {
 					dirty[i] = true
 				}
 			}
-		case 0x20:
+		case 0x16:
 			selected[row] = !selected[row]
 			dirty[row] = true
 		case 0x0D:
