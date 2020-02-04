@@ -180,11 +180,11 @@ func main() {
 	for {
 		w, h, err := tty.Size()
 		if err != nil {
-			w = 80
+			w = 79
 			h = 25
-			if *multi {
-				w -= 1
-			}
+		}
+		if *multi {
+			w -= 2
 		}
 		n := 0
 
