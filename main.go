@@ -237,6 +237,7 @@ func main() {
 			qlines = lines[off:]
 			rlines = qlines
 		}
+		out.Write([]byte("\x1b[?25l"))
 		for i, line := range qlines {
 			line = strings.Replace(line, "\t", "    ", -1)
 			line = truncate(line, w, "")
@@ -264,6 +265,9 @@ func main() {
 				break
 			}
 			out.Write([]byte("\n"))
+		}
+		if *query {
+			out.Write([]byte("\x1b[?25h"))
 		}
 		if *query {
 			out.Write([]byte(fmt.Sprintf("\x1b[%dA\x1b[%dC", n, runewidth.StringWidth(string(rs))+2)))
@@ -300,7 +304,7 @@ func main() {
 					}
 				}
 			}
-		case 0x17:
+		case 0x15, 0x17:
 			if *query && len(rs) > 0 {
 				rs = []rune{}
 				row = 0
