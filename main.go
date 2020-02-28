@@ -137,6 +137,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+
+	defer colorable.EnableColorsStdout(nil)
 	out := colorable.NewColorable(tty.Output())
 
 	sc := make(chan os.Signal, 1)
