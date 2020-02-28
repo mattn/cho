@@ -16,6 +16,12 @@ import (
 	"github.com/mattn/go-tty"
 )
 
+const (
+	name     = "cho"
+	version  = "0.0.2"
+	revision = "HEAD"
+)
+
 type AnsiColor map[string]string
 
 func (a AnsiColor) Get(name, fallback string) string {
@@ -26,14 +32,15 @@ func (a AnsiColor) Get(name, fallback string) string {
 }
 
 var (
-	cursorline = flag.Bool("cl", false, "cursor line")
-	linefg     = flag.String("lf", "black", "line foreground")
-	linebg     = flag.String("lb", "white", "line background")
-	color      = flag.Bool("cc", false, "handle colors")
-	query      = flag.Bool("q", false, "use query")
-	multi      = flag.Bool("m", false, "multi select")
-	sep        = flag.String("sep", "", "separator for prefix")
-	truncate   = runewidth.Truncate
+	cursorline  = flag.Bool("cl", false, "cursor line")
+	linefg      = flag.String("lf", "black", "line foreground")
+	linebg      = flag.String("lb", "white", "line background")
+	color       = flag.Bool("cc", false, "handle colors")
+	query       = flag.Bool("q", false, "use query")
+	multi       = flag.Bool("m", false, "multi select")
+	sep         = flag.String("sep", "", "separator for prefix")
+	showVersion = flag.Bool("v", false, "Print the version")
+	truncate    = runewidth.Truncate
 
 	fgcolor = AnsiColor{
 		"gray":    "30",
@@ -104,6 +111,10 @@ func truncateAnsi(line string, w int, _ string) string {
 
 func main() {
 	flag.Parse()
+	if *showVersion {
+		fmt.Printf("%s %s (rev: %s/%s)\n", name, version, revision, runtime.Version())
+		return
+	}
 
 	fillstart := "\x1b[0K"
 	fillend := "\x1b[0m"
