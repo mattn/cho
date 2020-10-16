@@ -317,7 +317,7 @@ func main() {
 
 	retry:
 		switch r {
-		case 0x09, 0x0E:
+		case 0x09, 0x0E: // TAB/CTRL-N
 			if row < len(qlines)-1 {
 				dirty[row], dirty[row+1] = true, true
 				row++
@@ -328,7 +328,7 @@ func main() {
 					}
 				}
 			}
-		case 0x10:
+		case 0x10: // CTRL-P
 			if row > 0 {
 				dirty[row], dirty[row-1] = true, true
 				row--
@@ -339,7 +339,7 @@ func main() {
 					}
 				}
 			}
-		case 0x15, 0x17:
+		case 0x15, 0x17: // CTRL-U/CTRL-W
 			if *query && len(rs) > 0 {
 				rs = []rune{}
 				row = 0
@@ -348,10 +348,10 @@ func main() {
 					dirty[i] = true
 				}
 			}
-		case 0x16:
+		case 0x16: // CTRL-V
 			selected[row] = !selected[row]
 			dirty[row] = true
-		case 0x0D:
+		case 0x0D: // ENTER
 			if *multi {
 				for i, s := range selected {
 					if s {
@@ -370,7 +370,7 @@ func main() {
 				}
 			}
 			return
-		case 0x1B:
+		case 0x1B: // ESC
 			if !tty.Buffered() {
 				return
 			}
@@ -382,14 +382,17 @@ func main() {
 				}
 				switch r {
 				case 'A':
-					r = 'k'
+					r = 0x0E // ALLOW-UP
 					goto retry
-				case 'B':
-					r = 'j'
+				case 'B': // ALLOW-DOWN
+					r = 0x10
+					goto retry
+				case 'Z': // SHIFT-TAB
+					r = 0x10
 					goto retry
 				}
 			}
-		case 0x08, 0x7F:
+		case 0x08, 0x7F: // BS/DELETE
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
 				row = 0

@@ -37,6 +37,18 @@ FOO=`ls | cho`
 for /f "delims=;" %%i in ('ls ^| cho') do set FOO=%%i
 ```
 
+## Keys
+
+|Key   |Behavior            |
+|------|--------------------|
+|CTRL-N|Next                |
+|CTRL-P|Previous            |
+|Enter |Decide              |
+|CTLR-A|Left side on prompt |
+|CTLR-E|Right side on prompt|
+|CTRL-V|Select in multi mode|
+|CTRL-U|Clear prompt        |
+
 ## License
 
 MIT
