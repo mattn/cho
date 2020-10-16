@@ -272,9 +272,6 @@ func main() {
 			}
 			n++
 			if n >= h {
-				if runtime.GOOS == "windows" {
-					out.Write([]byte("\n"))
-				}
 				break
 			}
 			out.Write([]byte("\n"))
@@ -288,9 +285,15 @@ func main() {
 			out.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
 		}
 
-		r, err := tty.ReadRune()
-		if err != nil {
-			panic(err)
+		var r rune
+		for {
+			r, err = tty.ReadRune()
+			if err != nil {
+				panic(err)
+			}
+			if r != 0 {
+				break
+			}
 		}
 
 	retry:
