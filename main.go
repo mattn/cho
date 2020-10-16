@@ -37,6 +37,7 @@ var (
 	color       = flag.Bool("cc", false, "handle colors")
 	query       = flag.Bool("q", false, "use query")
 	multi       = flag.Bool("m", false, "multi select")
+	maxlines    = flag.Int("M", -1, "max lines")
 	sep         = flag.String("sep", "", "separator for prefix")
 	showVersion = flag.Bool("v", false, "Print the version")
 	truncate    = runewidth.Truncate
@@ -189,6 +190,8 @@ func main() {
 	for i := 0; i < len(dirty); i++ {
 		dirty[i] = true
 	}
+	ml := 0
+	mh := 0
 	for {
 		w, h, err := tty.Size()
 		if err != nil {
@@ -198,12 +201,22 @@ func main() {
 		if *multi {
 			w -= 2
 		}
-		n := 0
-
+		if *maxlines > 0 && *maxlines < h-1 {
+			ml = *maxlines
+		} else {
+			ml = h - 2
+		}
 		if *query {
+			mh = ml
+		} else {
+			mh = ml + 1
+		}
+
+		n := 0
+		if *query {
+			n++
 			out.Write([]byte(fillstart))
 			out.Write([]byte("\r" + clearend + "> " + string(rs) + "\n"))
-			n++
 			qlines = nil
 			rlines = nil
 			if len(rs) > 0 {
@@ -245,11 +258,17 @@ func main() {
 					qlines = append(qlines, qline)
 				}
 			}
+			if off >= len(qlines) {
+				off = 0
+			}
+			qlines = qlines[off:]
+			rlines = qlines
 		} else {
 			qlines = lines[off:]
 			rlines = qlines
 		}
 		out.Write([]byte("\x1b[?25l"))
+
 		for i, line := range qlines {
 			line = strings.Replace(line, "\t", "    ", -1)
 			line = truncate(line, w, "")
@@ -269,19 +288,20 @@ func main() {
 				}
 				dirty[off+i] = false
 			}
-			n++
-			if n >= h {
+			if n >= ml {
 				break
 			}
 			out.Write([]byte("\n"))
+			n++
 		}
 		if *query {
 			out.Write([]byte("\x1b[?25h"))
 		}
-		if *query {
-			out.Write([]byte(fmt.Sprintf("\x1b[%dA\x1b[%dC", n, runewidth.StringWidth(string(rs))+2)))
-		} else {
+		if n >= 1 {
 			out.Write([]byte(fmt.Sprintf("\x1b[%dA", n)))
+		}
+		if *query {
+			out.Write([]byte(fmt.Sprintf("\x1b[%dC", runewidth.StringWidth(string(rs))+2)))
 		}
 
 		var r rune
@@ -301,7 +321,7 @@ func main() {
 			if row < len(qlines)-1 {
 				dirty[row], dirty[row+1] = true, true
 				row++
-				if row-off >= h {
+				if row-off >= mh {
 					off++
 					for i := 0; i < len(dirty); i++ {
 						dirty[i] = true
