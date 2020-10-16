@@ -31,14 +31,14 @@ func (a AnsiColor) Get(name, fallback string) string {
 }
 
 var (
-	cursorline  = flag.Bool("cl", false, "cursor line")
-	linefg      = flag.String("lf", "black", "line foreground")
-	linebg      = flag.String("lb", "white", "line background")
-	color       = flag.Bool("cc", false, "handle colors")
-	query       = flag.Bool("q", false, "use query")
-	multi       = flag.Bool("m", false, "multi select")
-	maxlines    = flag.Int("M", -1, "max lines")
-	sep         = flag.String("sep", "", "separator for prefix")
+	cursorline  = flag.Bool("cl", false, "Cursor line")
+	linefg      = flag.String("lf", "black", "Line foreground")
+	linebg      = flag.String("lb", "white", "Line background")
+	color       = flag.Bool("cc", false, "Handle colors")
+	query       = flag.Bool("q", false, "Use query")
+	multi       = flag.Bool("m", false, "Multi select")
+	maxlines    = flag.Int("M", -1, "Max lines")
+	sep         = flag.String("sep", "", "Separator for prefix")
 	showVersion = flag.Bool("v", false, "Print the version")
 	truncate    = runewidth.Truncate
 
