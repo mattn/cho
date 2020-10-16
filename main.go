@@ -264,8 +264,24 @@ func main() {
 			qlines = qlines[off:]
 			rlines = qlines
 		} else {
-			qlines = lines[off:]
-			rlines = qlines
+			qlines = nil
+			rlines = nil
+			for _, qline := range lines[off:] {
+				rline := qline
+				if *sep != "" {
+					tok := strings.SplitN(qline, *sep, 2)
+					if len(tok) == 2 {
+						rline = tok[0]
+						qline = tok[1]
+					} else {
+						rline = tok[0]
+						qline = ""
+					}
+				}
+
+				rlines = append(rlines, rline)
+				qlines = append(qlines, qline)
+			}
 		}
 		out.Write([]byte("\x1b[?25l"))
 
