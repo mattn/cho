@@ -16,11 +16,10 @@ import (
 	"github.com/mattn/go-tty"
 )
 
-const (
-	name     = "cho"
-	version  = "0.0.4"
-	revision = "HEAD"
-)
+const name = "cho"
+const version = "0.0.5"
+
+var revision = "HEAD"
 
 type AnsiColor map[string]string
 
