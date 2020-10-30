@@ -149,6 +149,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	clean, err := tty.Raw()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer clean()
+
 	defer colorable.EnableColorsStdout(nil)()
 	out := colorable.NewColorable(tty.Output())
 
