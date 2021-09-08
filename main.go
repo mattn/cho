@@ -36,6 +36,7 @@ var (
 	linebg      = flag.String("lb", "white", "Line background")
 	color       = flag.Bool("cc", false, "Handle colors")
 	query       = flag.Bool("q", false, "Use query")
+	ignoreCase  = flag.Bool("ic", false, "Ignore case match")
 	multi       = flag.Bool("m", false, "Multi select")
 	maxlines    = flag.Int("M", -1, "Max lines")
 	sep         = flag.String("sep", "", "Separator for prefix")
@@ -189,6 +190,12 @@ func main() {
 		}
 	}()
 
+	mf := strings.Index
+	if *ignoreCase {
+		mf = func(s, substr string) int {
+			return strings.Index(strings.ToUpper(s), strings.ToUpper(substr))
+		}
+	}
 	var rs []rune
 	off := 0
 	row := 0
@@ -240,7 +247,7 @@ func main() {
 						}
 					}
 
-					if strings.Index(qline, string(rs)) != -1 {
+					if mf(qline, string(rs)) != -1 {
 						rlines = append(rlines, rline)
 						qlines = append(qlines, qline)
 					}
