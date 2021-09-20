@@ -48,6 +48,7 @@ for /f "delims=;" %%i in ('ls ^| cho') do set FOO=%%i
 |CTLR-E|Right side on prompt|
 |CTRL-V|Select in multi mode|
 |CTRL-U|Clear prompt        |
+|ESC   |Cancel              |
 
 ## License
 
