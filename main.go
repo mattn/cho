@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -17,7 +18,7 @@ import (
 )
 
 const name = "cho"
-const version = "0.0.8"
+const version = "0.0.9"
 
 var revision = "HEAD"
 
@@ -35,6 +36,7 @@ var (
 	linefg      = flag.String("lf", "black", "Line foreground")
 	linebg      = flag.String("lb", "white", "Line background")
 	color       = flag.Bool("cc", false, "Handle colors")
+	nocolorres  = flag.Bool("nc", false, "No colors for result")
 	query       = flag.Bool("q", false, "Use query")
 	ignoreCase  = flag.Bool("ic", false, "Ignore case match")
 	multi       = flag.Bool("m", false, "Multi select")
@@ -182,6 +184,11 @@ func main() {
 		tty.Close()
 		if e != nil {
 			panic(e)
+		}
+		if *nocolorres {
+			var buf bytes.Buffer
+			colorable.NewNonColorable(&buf).Write([]byte(result))
+			result = buf.String()
 		}
 		if result != "" {
 			fmt.Print(result)
