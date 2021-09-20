@@ -401,9 +401,6 @@ func main() {
 			}
 			return
 		case 0x1B: // ESC
-			if !tty.Buffered() {
-				return
-			}
 			r, err = tty.ReadRune()
 			if err == nil && r == 0x5b {
 				r, err = tty.ReadRune()
@@ -411,17 +408,18 @@ func main() {
 					panic(err)
 				}
 				switch r {
-				case 'A':
-					r = 0x0E // ALLOW-UP
-					goto retry
-				case 'B': // ALLOW-DOWN
+				case 'A': // ALLOW-DOWN
 					r = 0x10
+					goto retry
+				case 'B': // ALLOW-UP
+					r = 0x0E
 					goto retry
 				case 'Z': // SHIFT-TAB
 					r = 0x10
 					goto retry
 				}
 			}
+			return
 		case 0x08, 0x7F: // BS/DELETE
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
