@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -32,18 +33,19 @@ func (a AnsiColor) Get(name, fallback string) string {
 }
 
 var (
-	cursorline  = flag.Bool("cl", false, "Cursor line")
-	linefg      = flag.String("lf", "black", "Line foreground")
-	linebg      = flag.String("lb", "white", "Line background")
-	color       = flag.Bool("cc", false, "Handle colors")
-	nocolorres  = flag.Bool("nc", false, "No colors for result")
-	query       = flag.Bool("q", false, "Use query")
-	ignoreCase  = flag.Bool("ic", false, "Ignore case match")
-	multi       = flag.Bool("m", false, "Multi select")
-	maxlines    = flag.Int("M", -1, "Max lines")
-	sep         = flag.String("sep", "", "Separator for prefix")
-	showVersion = flag.Bool("v", false, "Print the version")
-	truncate    = runewidth.Truncate
+	cursorline    = flag.Bool("cl", false, "Cursor line")
+	linefg        = flag.String("lf", "black", "Line foreground")
+	linebg        = flag.String("lb", "white", "Line background")
+	color         = flag.Bool("cc", false, "Handle colors")
+	nocolorres    = flag.Bool("nc", false, "No colors for result")
+	query         = flag.Bool("q", false, "Use query")
+	ignoreCase    = flag.Bool("ic", false, "Ignore case match")
+	multi         = flag.Bool("m", false, "Multi select")
+	maxlines      = flag.Int("M", -1, "Max lines")
+	sep           = flag.String("sep", "", "Separator for prefix")
+	resultPattern = flag.String("pat", "", "Result pattern")
+	showVersion   = flag.Bool("v", false, "Print the version")
+	truncate      = runewidth.Truncate
 
 	fgcolor = AnsiColor{
 		"gray":    "30",
@@ -143,7 +145,7 @@ func main() {
 		os.Exit(1)
 	}
 	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
-	result := ""
+	results := []string{}
 	var qlines, rlines []string
 
 	tty, err := tty.Open()
@@ -185,13 +187,31 @@ func main() {
 		if e != nil {
 			panic(e)
 		}
-		if *nocolorres {
-			var buf bytes.Buffer
-			colorable.NewNonColorable(&buf).Write([]byte(result))
-			result = buf.String()
-		}
-		if result != "" {
-			fmt.Print(result)
+		if len(results) > 0 {
+			if *resultPattern != "" {
+				re, err := regexp.Compile(*resultPattern)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+				for i, line := range results {
+					if vv := re.FindAllString(line, 1); len(vv) > 0 {
+						results[i] = vv[0]
+					}
+				}
+			}
+			if *nocolorres {
+				var buf bytes.Buffer
+				nocolor := colorable.NewNonColorable(&buf)
+				for _, line := range results {
+					nocolor.Write([]byte(line + "\n"))
+				}
+				fmt.Print(buf.String())
+			} else {
+				for _, line := range results {
+					fmt.Println(line)
+				}
+			}
 		} else {
 			os.Exit(1)
 		}
@@ -393,17 +413,17 @@ func main() {
 				for i, s := range selected {
 					if s {
 						if *sep != "" {
-							result += rlines[i-off] + "\n"
+							results = append(results, rlines[i-off])
 						} else {
-							result += qlines[i-off] + "\n"
+							results = append(results, qlines[i-off])
 						}
 					}
 				}
 			} else {
 				if *sep != "" {
-					result = rlines[row-off] + "\n"
+					results = []string{rlines[row-off]}
 				} else {
-					result = qlines[row-off] + "\n"
+					results = []string{qlines[row-off]}
 				}
 			}
 			return
