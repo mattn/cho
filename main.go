@@ -43,6 +43,7 @@ var (
 	multi         = flag.Bool("m", false, "Multi select")
 	maxlines      = flag.Int("M", -1, "Max lines")
 	sep           = flag.String("sep", "", "Separator for prefix")
+	offset        = flag.Int("off", 0, "Header offset")
 	resultPattern = flag.String("pat", "", "Result pattern")
 	showVersion   = flag.Bool("v", false, "Print the version")
 	truncate      = runewidth.Truncate
@@ -225,7 +226,7 @@ func main() {
 	}
 	var rs []rune
 	off := 0
-	row := 0
+	row := *offset
 	dirty := make([]bool, len(lines))
 	selected := make([]bool, len(lines))
 	for i := 0; i < len(dirty); i++ {
@@ -386,7 +387,7 @@ func main() {
 				}
 			}
 		case 0x10: // CTRL-P
-			if row > 0 {
+			if row > *offset {
 				dirty[row], dirty[row-1] = true, true
 				row--
 				if row < off {
@@ -399,7 +400,7 @@ func main() {
 		case 0x15, 0x17: // CTRL-U/CTRL-W
 			if *query && len(rs) > 0 {
 				rs = []rune{}
-				row = 0
+				row = *offset
 				off = 0
 				for i := 0; i < len(dirty); i++ {
 					dirty[i] = true
@@ -450,7 +451,7 @@ func main() {
 		case 0x08, 0x7F: // BS/DELETE
 			if *query && len(rs) > 0 {
 				rs = rs[:len(rs)-1]
-				row = 0
+				row = *offset
 				off = 0
 				if len(rs) == 0 {
 					for i := 0; i < len(dirty); i++ {
@@ -471,7 +472,7 @@ func main() {
 			}
 			if *query && unicode.IsPrint(r) {
 				rs = append(rs, r)
-				row = 0
+				row = *offset
 				off = 0
 			}
 		}
