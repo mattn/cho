@@ -19,7 +19,7 @@ import (
 )
 
 const name = "cho"
-const version = "0.0.10"
+const version = "0.0.11"
 
 var revision = "HEAD"
 
@@ -195,8 +195,8 @@ func main() {
 					os.Exit(1)
 				}
 				for i, line := range results {
-					if vv := re.FindAllString(line, 1); len(vv) > 0 {
-						results[i] = vv[0]
+					if vv := re.FindStringSubmatch(line); len(vv) > 1 {
+						results[i] = vv[1]
 					}
 				}
 			}
