@@ -160,7 +160,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer clean()
 
 	defer colorable.EnableColorsStdout(nil)()
 	out := colorable.NewColorable(tty.Output())
@@ -170,6 +169,7 @@ func main() {
 	go func() {
 		<-sc
 		out.Write([]byte("\x1b[?25h\x1b[0J"))
+		clean()
 		tty.Close()
 		os.Exit(1)
 	}()
@@ -184,6 +184,7 @@ func main() {
 	defer func() {
 		e := recover()
 		out.Write([]byte("\x1b[?25h\r\x1b[0J"))
+		clean()
 		tty.Close()
 		if e != nil {
 			panic(e)
@@ -429,22 +430,24 @@ func main() {
 			}
 			return
 		case 0x1B: // ESC
-			r, err = tty.ReadRune()
-			if err == nil && r == 0x5b {
+			if tty.Buffered() {
 				r, err = tty.ReadRune()
-				if err != nil {
-					panic(err)
-				}
-				switch r {
-				case 'A': // ALLOW-DOWN
-					r = 0x10
-					goto retry
-				case 'B': // ALLOW-UP
-					r = 0x0E
-					goto retry
-				case 'Z': // SHIFT-TAB
-					r = 0x10
-					goto retry
+				if err == nil && r == 0x5b {
+					r, err = tty.ReadRune()
+					if err != nil {
+						panic(err)
+					}
+					switch r {
+					case 'A': // ALLOW-DOWN
+						r = 0x10
+						goto retry
+					case 'B': // ALLOW-UP
+						r = 0x0E
+						goto retry
+					case 'Z': // SHIFT-TAB
+						r = 0x10
+						goto retry
+					}
 				}
 			}
 			return
