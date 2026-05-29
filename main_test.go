@@ -12,13 +12,13 @@ type fakeTTY struct {
 	buffered bool
 }
 
-func (f *fakeTTY) ReadRune() (rune, error) {
+func (f *fakeTTY) ReadRune() (rune, int, error) {
 	if f.pos >= len(f.runes) {
-		return 0, fmt.Errorf("eof")
+		return 0, 0, fmt.Errorf("eof")
 	}
 	r := f.runes[f.pos]
 	f.pos++
-	return r, nil
+	return r, 1, nil
 }
 
 func (f *fakeTTY) Buffered() bool {
@@ -254,7 +254,7 @@ func TestBuildRenderStateIncludesQueryCursorAndVisibleLines(t *testing.T) {
 	if got, want := render.cursorCol, 3; got != want {
 		t.Fatalf("cursorCol = %d, want %d", got, want)
 	}
-	if got, want := render.cursorUp, 3; got != want {
+	if got, want := render.cursorUp, 2; got != want {
 		t.Fatalf("cursorUp = %d, want %d", got, want)
 	}
 	if !render.clearBelow {
@@ -274,6 +274,46 @@ func TestBuildRenderStateIncludesQueryCursorAndVisibleLines(t *testing.T) {
 	}
 	if got, want := render.lines[1].text, "Beta    Tab"; got != want {
 		t.Fatalf("lines[1].text = %q, want %q", got, want)
+	}
+}
+
+func TestBuildRenderStateCursorUpMatchesDrawnNewlines(t *testing.T) {
+	// cursorUp must equal the number of newlines draw() emits, otherwise the
+	// cursor drifts away from the prompt line on every redraw.
+	cases := []struct {
+		name         string
+		lines        []string
+		queryEnabled bool
+		query        string
+	}{
+		{"query with matches", []string{"id-1\tAlpha", "id-2\tBeta", "id-3\tGamma"}, true, "a"},
+		{"query no matches", []string{"id-1\tAlpha", "id-2\tBeta"}, true, "zzz"},
+		{"no query", []string{"id-1\tAlpha", "id-2\tBeta", "id-3\tGamma"}, false, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := newTestUIState(tc.lines, tc.queryEnabled, false)
+			for _, r := range tc.query {
+				state.handleKey(r)
+			}
+			state.refreshView()
+
+			render := buildRenderState(state, 20, state.maxVisible, func(s string, _ int, _ string) string { return s })
+
+			dirty := make([]bool, len(tc.lines))
+			for i := range dirty {
+				dirty[i] = true
+			}
+			var buf strings.Builder
+			if _, err := draw(&buf, render, dirty, drawStyle{}); err != nil {
+				t.Fatalf("draw returned error: %v", err)
+			}
+
+			newlines := strings.Count(buf.String(), "\n")
+			if newlines != render.cursorUp {
+				t.Fatalf("draw wrote %d newlines but cursorUp = %d", newlines, render.cursorUp)
+			}
+		})
 	}
 }
 

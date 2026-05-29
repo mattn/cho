@@ -15,7 +15,7 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-runewidth"
-	"github.com/mattn/go-tty"
+	"github.com/mattn/go-tty/v2"
 )
 
 const name = "cho"
@@ -110,7 +110,7 @@ type renderState struct {
 }
 
 type ttyReader interface {
-	ReadRune() (rune, error)
+	ReadRune() (rune, int, error)
 	Buffered() bool
 }
 
@@ -348,7 +348,6 @@ func buildRenderState(state *uiState, width, maxLines int, trunc func(string, in
 	}
 	if state.queryEnabled {
 		render.queryPrompt = "> " + state.queryString()
-		render.cursorUp = 1
 		render.cursorCol = runewidth.StringWidth(state.queryString()) + 2
 		render.clearBelow = len(state.query) > 0
 	}
@@ -364,7 +363,16 @@ func buildRenderState(state *uiState, width, maxLines int, trunc func(string, in
 			selected: state.selected[it.index],
 			current:  state.off+i == state.row,
 		})
-		render.cursorUp++
+	}
+
+	// cursorUp must equal the number of newlines draw() writes so the cursor
+	// returns to the prompt line. draw() writes one newline per rendered line;
+	// in query mode it suppresses the trailing newline after the last line but
+	// adds the prompt's own newline, so the count is len(lines) either way. The
+	// only exception is an empty query view, which still emits the prompt line.
+	render.cursorUp = len(render.lines)
+	if state.queryEnabled && len(render.lines) == 0 {
+		render.cursorUp = 1
 	}
 	return render
 }
@@ -385,7 +393,7 @@ func normalizeKey(r rune, queryEnabled bool) rune {
 
 func readKey(reader ttyReader) (rune, error) {
 	for {
-		r, err := reader.ReadRune()
+		r, _, err := reader.ReadRune()
 		if err != nil {
 			return 0, err
 		}
@@ -406,14 +414,14 @@ func readInputKey(reader ttyReader) (rune, bool, error) {
 	if !reader.Buffered() {
 		return r, true, nil
 	}
-	next, err := reader.ReadRune()
+	next, _, err := reader.ReadRune()
 	if err != nil {
 		return 0, false, err
 	}
 	if next != 0x5b {
 		return r, true, nil
 	}
-	key, err := reader.ReadRune()
+	key, _, err := reader.ReadRune()
 	if err != nil {
 		return 0, false, err
 	}
