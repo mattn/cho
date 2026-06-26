@@ -469,6 +469,39 @@ func formatResults(results []string, stripColor bool) (string, error) {
 	return buf.String(), nil
 }
 
+// highlightLine wraps the current line with the cursor color and reasserts the
+// background after every embedded SGR sequence, so an embedded reset (e.g.
+// "\x1b[0m" emitted by `ls --color`) cannot wipe out the cursor highlight.
+func highlightLine(text, fg, bg string) string {
+	start := "\x1b[" + fg + ";" + bg + "m"
+	bgOnly := "\x1b[" + bg + "m"
+	r := []rune(text)
+	var b strings.Builder
+	b.WriteString(start)
+	for i := 0; i < len(r); i++ {
+		if i < len(r)-1 && r[i] == '\x1b' && r[i+1] == '[' {
+			j := i + 2
+			for ; j < len(r); j++ {
+				if ('a' <= r[j] && r[j] <= 'z') || ('A' <= r[j] && r[j] <= 'Z') {
+					break
+				}
+			}
+			end := j
+			if end < len(r) {
+				end++
+			}
+			b.WriteString(string(r[i:end]))
+			if j < len(r) && r[j] == 'm' {
+				b.WriteString(bgOnly)
+			}
+			i = j
+			continue
+		}
+		b.WriteRune(r[i])
+	}
+	return b.String()
+}
+
 func draw(w io.Writer, render renderState, dirty []bool, style drawStyle) (int, error) {
 	n := 0
 	if render.showCursor {
@@ -503,7 +536,7 @@ func draw(w io.Writer, render renderState, dirty []bool, style drawStyle) (int, 
 				return 0, err
 			}
 			if line.current {
-				if _, err := io.WriteString(w, "\x1b["+style.fg+";"+style.bg+"m"+line.text+style.fillEnd+"\r"); err != nil {
+				if _, err := io.WriteString(w, highlightLine(line.text, style.fg, style.bg)+style.fillEnd+"\r"); err != nil {
 					return 0, err
 				}
 			} else {

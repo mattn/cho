@@ -404,6 +404,24 @@ func TestFormatResultsWritesLines(t *testing.T) {
 	}
 }
 
+func TestHighlightLinePreservesBackgroundAfterEmbeddedReset(t *testing.T) {
+	// `ls --color` emits embedded resets ("\x1b[0m") that would otherwise wipe
+	// out the cursor highlight background mid-line.
+	got := highlightLine("\x1b[0m\x1b[01;34mDocuments\x1b[0m", "30", "47")
+	want := "\x1b[30;47m\x1b[0m\x1b[47m\x1b[01;34m\x1b[47mDocuments\x1b[0m\x1b[47m"
+	if got != want {
+		t.Fatalf("highlightLine = %q, want %q", got, want)
+	}
+}
+
+func TestHighlightLinePlainTextKeepsSingleColor(t *testing.T) {
+	got := highlightLine("Alpha", "30", "47")
+	want := "\x1b[30;47mAlpha"
+	if got != want {
+		t.Fatalf("highlightLine = %q, want %q", got, want)
+	}
+}
+
 func TestDrawRendersQueryAndCurrentLine(t *testing.T) {
 	render := renderState{
 		queryPrompt: "> abc",
